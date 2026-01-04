@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全球航迹可视化平台</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .leaflet-container { background: #f1f5f9 !important; }
+        .leaflet-tooltip {
+            border: none !important;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important;
+            border-radius: 6px !important;
+            padding: 4px 10px !important;
+            font-size: 10px !important;
+            font-weight: bold !important;
+            color: #1e293b !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // 统一的地理坐标数据库 [lat, lon, name]
+        const LOCATION_DATA = {
+          // 机场
+          "CTU": [30.5785, 103.9471, "成都双流"],
+          "DUJ": [30.9880, 103.6464, "都江堰"],
+          "JZG": [33.2500, 104.2367, "九寨沟"],
+          "PEK": [40.0799, 116.6031, "北京首都"],
+          "SFO": [37.6189, -122.3750, "旧金山"],
+          "LAX": [33.9416, -118.4085, "洛杉矶"],
+          "SAN": [32.7157, -117.1611, "圣迭戈"],
+          "BER": [37.8715, -122.2730, "伯克利"],
+          "SZX": [22.6393, 113.8122, "深圳宝安"],
+          "PKX": [39.5098, 116.4105, "北京大兴"],
+          "DGU": [23.0207, 113.7518, "东莞"],
+          "ZHU": [22.2710, 113.5767, "珠海"],
+          "XMN": [24.5440, 118.1277, "厦门高崎"],
+          "HGH": [30.2295, 120.4344, "杭州萧山"],
+          "ZHO": [29.9853, 122.2078, "舟山"],
+          "SHA": [31.2304, 121.4737, "上海"],
+          "HAK": [20.0231, 110.4589, "海口美兰"],
+          "KIX": [34.4320, 135.2304, "大阪关西"],
+          "HND": [35.5494, 139.7798, "东京羽田"],
+          "CKG": [29.7192, 106.6417, "重庆江北"],
+          "TJ": [29.8, 106.3, "统景"],
+          "TFU": [30.3125, 104.4444, "成都天府"],
+          "CAI": [30.1219, 31.4056, "开罗"],
+          "LHR": [51.4700, -0.4543, "伦敦希思罗"],
+          "LTN": [51.8747, -0.3683, "伦敦卢顿"],
+          "SSH": [27.9772, 34.3942, "沙姆沙伊赫"],
+          "ASW": [23.9644, 32.8197, "阿斯旺"],
+          "HRG": [27.1783, 33.8461, "赫尔格达"],
+          "IST": [41.2753, 28.7519, "伊斯坦布尔"],
+          "STN": [51.8860, 0.2389, "伦敦斯坦斯特德"],
+          "DLM": [36.7131, 28.7925, "达拉曼"],
+          "ASR": [38.7704, 35.4950, "开塞利"],
+          "SAW": [40.8987, 29.3092, "萨比哈格克琴"],
+          "BGW": [33.2625, 44.2344, "巴格达"],
+          "IKA": [35.4161, 51.1522, "德微兰"],
+          "BFS": [54.6575, -6.2158, "贝尔法斯特"],
+          "ORK": [51.8413, -8.4911, "科克"],
+          "EDI": [55.9508, -3.3615, "爱丁堡"],
+          "SJJ": [43.8247, 18.3314, "萨拉热窝"],
+          "LGW": [51.1481, -0.1903, "伦敦盖特威克"],
+          "PVG": [31.1443, 121.8083, "上海浦东"],
+          "KMG": [24.9922, 102.9292, "昆明长水"],
+          "DAC": [23.8433, 90.3978, "达卡"],
+          "CGP": [22.2496, 91.8133, "吉大港"],
+          "COX": [21.4272, 92.0058, "柯克斯巴扎尔"],
+          "MAD": [40.4839, -3.5680, "马德里"],
+          "BGY": [45.6739, 9.7042, "米兰/贝尔加莫"],
+          "KRK": [50.0777, 19.7848, "克劳科夫"],
+          "BGO": [60.2934, 5.2181, "卑尔根"],
+          "OSL": [60.1975, 11.1004, "奥斯陆"],
+          "ARN": [59.6519, 17.9186, "斯德哥尔摩"],
+          "VBY": [57.6628, 18.3461, "维斯比"],
+          "CRL": [50.4592, 4.4538, "布鲁塞尔/沙勒罗瓦"],
+          "SDR": [43.4271, -3.8200, "桑坦德"],
+          "HAV": [22.9892, -82.4091, "哈瓦那"],
+          "LIM": [-12.0219, -77.1143, "利马"],
+          "PEM": [-12.5833, -69.1833, "马尔多纳多港"],
+          "CUZ": [-13.5357, -71.9387, "库斯科"],
+          "AQP": [-16.3411, -71.5831, "阿雷基帕"],
+          "CJC": [-22.4892, -68.9103, "卡拉马"],
+          "SCL": [-33.3930, -70.7858, "圣地亚哥"],
+          "PMC": [-41.4350, -73.0939, "蒙特港"],
+          "PNT": [-51.6789, -72.5028, "纳塔莱斯港"],
+          "PUQ": [-53.0026, -70.8546, "蓬塔阿雷纳斯"],
+          "BOG": [4.7016, -74.1469, "波哥大"],
+          "MEX": [19.4361, -99.0719, "墨西哥城"],
+          "TLC": [19.3371, -99.5660, "托卢卡"],
+          "TIJ": [32.5411, -116.9700, "蒂华纳"],
+          "JHG": [21.9740, 100.7597, "西双版纳"],
+          "VTE": [17.9883, 102.5633, "万象"],
+          "LHW": [36.5167, 103.6167, "兰州"],
+          "URC": [43.9071, 87.4742, "乌鲁木齐"],
+          "YIN": [43.9300, 81.3300, "伊宁"],
+          "SLM": [44.8300, 81.3300, "赛里木湖"],
+          "IQN": [35.5300, 104.6200, "庆阳"],
+          "WUH": [30.7838, 114.2081, "武汉"],
+          "SHE": [41.6395, 123.4833, "沈阳"],
+          "DLC": [38.9656, 121.5386, "大连"],
+          "TNA": [36.8572, 117.2161, "济南"],
+          "JIN": [35.4146, 116.5871, "济宁"],
+          "AQG": [30.5842, 117.0519, "安庆"],
+          "TSN": [39.1244, 117.3461, "天津"],
+          "DMK": [13.9126, 100.6067, "曼谷廊曼"],
+          "RGN": [16.9073, 96.1332, "仰光"],
+          "MDL": [21.7039, 95.9672, "曼德勒"],
+          "BKK": [13.6925, 100.7500, "曼谷素万那普"],
+          "CAN": [23.3924, 113.2988, "广州白云"],
+          "SJW": [38.2806, 114.6972, "石家庄正定"],
+          "TYN": [37.7469, 112.6285, "太原武宿"],
+
+          // 铁路与城市
+          "LON": [51.5074, -0.1278, "伦敦"],
+          "BJS": [39.9042, 116.4074, "北京"],
+          "HRB": [45.7569, 126.6424, "哈尔滨"],
+          "YCH": [47.7275, 128.8993, "伊春"],
+          "JYI": [48.8914, 130.3977, "嘉荫"],
+          "HEI": [50.2452, 127.5285, "黑河"],
+          "TGC": [25.0209, 98.4949, "腾冲"],
+          "LXA": [29.6469, 91.1172, "拉萨"],
+          "LJG": [26.8721, 100.2273, "丽江"],
+          "DLI": [25.5916, 100.2290, "大理"],
+          "YXN": [24.4442, 100.1264, "云县"],
+          "FC": [24.5928, 99.9288, "凤庆"],
+          "NCG": [28.6759, 115.8921, "南昌"],
+          "FZU": [26.0745, 119.2965, "福州"],
+          "JJG": [29.7051, 115.9818, "九江"],
+          "JDZ": [29.2885, 117.1864, "景德镇"],
+          "GLN": [25.2736, 110.2901, "桂林"],
+          "ASG": [41.1075, 122.9946, "鞍山"],
+          "ZZU": [24.5129, 117.6471, "漳州"],
+          "WQN": [39.3854, 117.0435, "武清"],
+          "DAG": [38.8, 117.4, "大港"],
+          "TJ": [39.1, 117.2, "天津"],
+          "RQU": [38.7456, 116.0954, "任丘"],
+          "QHD": [39.9354, 119.6003, "秦皇岛"],
+          "FEN": [41.2097, 116.6458, "丰宁"],
+          "OSA": [34.6937, 135.5023, "大阪"],
+          "KYT": [35.0116, 135.7681, "京都"],
+          "NGO": [35.1815, 136.9066, "名古屋"],
+          "TYO": [35.6895, 139.6917, "东京"],
+          "YHM": [35.4437, 139.6380, "横滨"],
+          "LXR": [25.6872, 32.6396, "卢克索"],
+          "DAU": [23.8239, 89.7570, "Daulatdia"],
+          "LPQ": [19.8850, 102.1347, "琅勃拉邦"],
+          "KPF": [18.3000, 101.7000, "关西瀑布"],
+          "VRE": [18.9247, 102.4489, "万荣"],
+
+          // 新增公路城市
+          "KDN": [43.3440, 82.8870, "库尔德宁"],
+          "BRJ": [48.0772, 86.8524, "布尔津"],
+          "LNZ": [29.6541, 94.3610, "林芝"],
+          "NAQ": [31.4764, 92.0577, "那曲"],
+          "DUB": [53.3498, -6.2603, "都柏林"],
+          "GLY": [53.2707, -9.0568, "高威"],
+
+          // 新增铁路点
+          "LSH": [35.8000, 116.0800, "梁山"],
+          "CBG": [52.2053, 0.1218, "剑桥"],
+          "PLI": [37.8170, 120.7500, "蓬莱"],
+
+          // 新增公路点 - 土耳其
+          "KAS": [36.2023, 29.6375, "卡什"],
+          "AYT": [36.8969, 30.7133, "安塔利亚"],
+          "GME": [38.6431, 34.8289, "格雷梅"],
+
+          // 新增公路点 - 中东
+          "MSL": [36.3489, 43.1577, "摩苏尔"],
+          "EBL": [36.1911, 44.0091, "埃尔比勒"],
+          "ISF": [32.6546, 51.6680, "伊斯法罕"],
+          "SYZ": [29.5918, 52.5837, "设拉子"],
+          "PPS": [29.9351, 52.8916, "波斯波利斯"],
+
+          // 新增公路点 - 埃及
+          "SIW": [29.2032, 25.5195, "锡瓦"],
+
+          // 新增公路点 - 欧洲与南美
+          "ARI": [-18.4783, -70.3126, "阿里卡"],
+          "ATC": [-22.9087, -68.1997, "阿塔卡马"]
+        };
+
+        // 航空数据
+        const pastFlightData = [
+          ["CTU", "PEK"], ["PEK", "CTU"], ["PEK", "SFO"], ["LAX", "PEK"], ["PEK", "SZX"],
+          ["SZX", "PKX"], ["XMN", "PKX"], ["PKX", "SZX"], ["SZX", "HGH"], ["HGH", "PKX"],
+          ["PKX", "HAK"], ["HAK", "PEK"], ["PKX", "KIX"], ["HND", "PKX"], ["CKG", "PKX"],
+          ["PEK", "CTU"], ["TFU", "CAI"], ["CAI", "TFU"], ["CTU", "PEK"], ["PEK", "SZX"],
+          ["SZX", "PKX"], ["PEK", "LHR"], ["LTN", "SSH"], ["SSH", "CAI"], ["CAI", "ASW"],
+          ["HRG", "LTN"], ["LTN", "IST"], ["IST", "LTN"], ["STN", "DLM"], ["ASR", "SAW"],
+          ["SAW", "BGW"], ["IKA", "SAW"], ["SAW", "STN"], ["STN", "BFS"], ["ORK", "EDI"],
+          ["STN", "SJJ"], ["SJJ", "LTN"], ["LGW", "PVG"], ["PVG", "PEK"], ["PKX", "KMG"],
+          ["KMG", "DAC"], ["CGP", "DAC"], ["DAC", "PKX"], ["PKX", "KMG"], ["KMG", "HGH"],
+          ["HGH", "MAD"], ["MAD", "BGY"], ["BGY", "KRK"], ["KRK", "BGO"], ["BGO", "OSL"],
+          ["OSL", "ARN"], ["ARN", "VBY"], ["VBY", "ARN"], ["ARN", "CRL"], ["CRL", "SDR"],
+          ["MAD", "HAV"], ["HAV", "LIM"], ["LIM", "PEM"], ["PEM", "CUZ"], ["CUZ", "AQP"],
+          ["CJC", "SCL"], ["SCL", "PMC"], ["PMC", "PNT"], ["PUQ", "PMC"], ["PMC", "SCL"],
+          ["SCL", "BOG"], ["BOG", "MEX"], ["TLC", "TIJ"], ["LAX", "TFU"], ["CTU", "PEK"],
+          ["PKX", "SZX"], ["SZX", "JHG"], ["VTE", "KMG"], ["KMG", "SZX"], ["SZX", "LHW"],
+          ["LHW", "URC"], ["URC", "YIN"], ["YIN", "LHW"], ["LHW", "IQN"], ["IQN", "SZX"],
+          ["SZX", "WUH"], ["WUH", "SHE"], ["DLC", "TNA"], ["TNA", "SZX"],
+          ["CAN", "SJW"], ["TYN", "SZX"]
+        ];
+
+        const futureFlightData = [
+          ["SZX", "AQG"], ["AQG", "TSN"], ["TSN", "AQG"], ["AQG", "SZX"], ["SZX", "DMK"],
+          ["DMK", "RGN"], ["MDL", "DMK"], ["BKK", "SZX"], ["SZX", "PKX"], ["PEK", "SZX"]
+        ];
+
+        // 铁路数据
+        const railwayData = [
+          { name: "英国东海岸主线 (ECML)", color: "#ef4444", path: ["EDI", "LON"], waypoints: [[54.97, -1.61], [53.95, -1.08]] },
+          { name: "京哈高铁", color: "#ef4444", path: ["BJS", "HRB"], waypoints: [[39.12, 117.19], [41.79, 123.42]] },
+          { name: "哈尔滨 - 伊春 往返", color: "#ef4444", path: ["HRB", "YCH"], waypoints: [[46.63, 127.14]] },
+          { name: "北京 - 乌鲁木齐 往返", color: "#ef4444", path: ["BJS", "URC"], waypoints: [[40.81, 111.67], [38.48, 106.27], [39.74, 98.49]] },
+          { name: "北京 - 拉萨 往返", color: "#ef4444", path: ["BJS", "LXA"], waypoints: [[34.26, 108.94], [36.61, 101.77], [36.40, 94.90], [32.26, 92.06]] },
+          { name: "昆明 - 大理", color: "#ef4444", path: ["KMG", "DLI"], waypoints: [[25.04, 101.52], [25.59, 100.22]] },
+          { name: "大理 - 丽江", color: "#ef4444", path: ["DLI", "LJG"], waypoints: [[26.87, 100.22]] },
+          { name: "大理 - 云县", color: "#ef4444", path: ["DLI", "YXN"], waypoints: [[25.02, 100.18]] },
+          { name: "北京 - 南昌 - 福州", color: "#ef4444", path: ["BJS", "FZU"], waypoints: [[36.06, 114.38], [34.75, 113.62], [30.59, 114.30], [28.67, 115.89], [27.94, 117.63]] },
+          { name: "北京 - 九江", color: "#ef4444", path: ["BJS", "JJG"], waypoints: [[36.06, 114.38], [34.75, 113.62], [31.5, 115.0]] },
+          { name: "九江 - 景德镇", color: "#ef4444", path: ["JJG", "JDZ"], waypoints: [[29.7, 116.0]] },
+          { name: "北京 - 桂林 往返", color: "#ef4444", path: ["BJS", "GLN"], waypoints: [[34.75, 113.62], [30.59, 114.30], [28.22, 112.93], [26.89, 112.60]] },
+          { name: "沈阳 - 鞍山", color: "#ef4444", path: ["SHE", "ASG"] },
+          { name: "鞍山 - 大连", color: "#ef4444", path: ["ASG", "DLC"], waypoints: [[40.65, 122.22]] },
+          { name: "石家庄 - 太原", color: "#ef4444", path: ["SJW", "TYN"] },
+          { name: "福州 - 漳州 - 厦门", color: "#ef4444", path: ["FZU", "XMN"], waypoints: [[25.45, 119.01], [24.51, 117.64]] },
+          { name: "大阪 - 名古屋 (途经京都)", color: "#ef4444", path: ["OSA", "NGO"], waypoints: [[35.01, 135.76], [35.18, 136.90]] },
+          { name: "名古屋 - 东京", color: "#ef4444", path: ["NGO", "TYO"], waypoints: [[35.14, 138.92]] },
+          { name: "挪威卑尔根铁路", color: "#ef4444", path: ["BGO", "OSL"], waypoints: [[60.59, 7.21], [60.74, 7.82]] },
+          { name: "埃及尼罗河铁路 (ASW-LXR)", color: "#ef4444", path: ["ASW", "LXR"], waypoints: [[24.89, 32.93]] },
+          { name: "孟加拉国 D-D 线", color: "#ef4444", path: ["DAC", "DAU"], waypoints: [[23.90, 90.15]] },
+
+          // 新增中老铁路
+          { name: "中老铁路 (版纳-琅勃拉邦)", color: "#ef4444", path: ["JHG", "LPQ"], waypoints: [[21.17, 101.68], [20.45, 101.88]] },
+          { name: "中老铁路 (琅勃拉邦-万荣)", color: "#ef4444", path: ["LPQ", "VRE"], waypoints: [[19.35, 102.35]] },
+
+          // 新增京蓬铁路
+          { name: "京蓬往返 (北京-蓬莱)", color: "#ef4444", path: ["PEK", "PLI"], waypoints: [[36.6, 117.1], [36.7, 118.5], [37.5, 121.3]] },
+
+          // 新增美国西海岸铁路
+          { name: "Pacific Surfliner (圣迭戈-洛杉矶)", color: "#ef4444", path: ["SAN", "LAX"], waypoints: [[33.7, -117.8], [33.9, -118.2]] },
+
+          // 新增京沪高铁支线
+          { name: "京济南往返 (北京-济南)", color: "#ef4444", path: ["BJS", "TNA"], waypoints: [[38.5, 116.5], [37.5, 116.8], [37.0, 117.0]] },
+          { name: "京济宁往返 (北京-济宁)", color: "#ef4444", path: ["BJS", "JIN"], waypoints: [[37.8, 116.3], [37.0, 116.4], [36.2, 116.5]] },
+
+          // 新增京沪高铁主线
+          { name: "京沪高铁往返 (北京-上海)", color: "#ef4444", path: ["BJS", "SHA"], waypoints: [[38.2, 116.7], [37.0, 116.5], [35.8, 116.5], [34.6, 117.0], [33.5, 118.5], [32.5, 119.5], [31.8, 120.5]] },
+          { name: "京杭高铁往返 (北京-杭州)", color: "#ef4444", path: ["BJS", "HGH"], waypoints: [[37.5, 116.8], [36.0, 116.8], [34.8, 117.2], [33.8, 118.0], [32.8, 119.0], [31.8, 120.0]] },
+
+          // 新增英国铁路
+          { name: "伦敦 - 剑桥往返", color: "#ef4444", path: ["LON", "CBG"] },
+
+          // 新增京津冀铁路
+          { name: "北京 - 任丘", color: "#ef4444", path: ["BJS", "RQU"] },
+          { name: "北京 - 天津", color: "#ef4444", path: ["BJS", "TJ"] },
+          { name: "任丘 - 天津", color: "#ef4444", path: ["RQU", "TJ"] },
+          { name: "任丘 - 梁山", color: "#ef4444", path: ["RQU", "LSH"] },
+          { name: "蓬莱 - 烟台", color: "#ef4444", path: ["PLI", "YT"] },
+
+          // 新增黑龙江铁路
+          { name: "伊春 - 嘉荫", color: "#ef4444", path: ["YCH", "JYI"] },
+          { name: "嘉荫 - 哈尔滨", color: "#ef4444", path: ["JYI", "HRB"], waypoints: [[47.2, 128.5], [46.5, 127.5]] },
+
+          // 中国南北分界线（特殊标记线）
+          { name: "黑河-腾冲分界线", color: "#000000", path: ["HEI", "TGC"] }
+        ];
+
+        // 公路数据
+        const roadData = [
+          { name: "伊宁 - 库尔德宁 往返", color: "#10b981", path: ["YIN", "KDN"], waypoints: [[43.5, 82.2]] },
+          { name: "乌鲁木齐 - 布尔津 往返", color: "#10b981", path: ["URC", "BRJ"], waypoints: [[44.3, 86.0], [46.2, 86.5]] },
+          { name: "拉萨 - 林芝 (林拉公路)", color: "#10b981", path: ["LXA", "LNZ"], waypoints: [[29.8, 92.5], [29.9, 93.5]] },
+          { name: "拉萨 - 那曲 (G6/G109)", color: "#10b981", path: ["LXA", "NAQ"], waypoints: [[30.5, 91.2]] },
+          { name: "贝尔法斯特 - 都柏林", color: "#16a34a", path: ["BFS", "DUB"], waypoints: [[54.2, -6.3]] },
+          { name: "都柏林 - 高威", color: "#16a34a", path: ["DUB", "GLY"], waypoints: [[53.3, -7.5]] },
+          { name: "高威 - 科克", color: "#16a34a", path: ["GLY", "ORK"], waypoints: [[52.6, -8.9]] },
+
+          // 新增公路 - 土耳其
+          { name: "土耳其南海岸 (达拉曼-卡什)", color: "#10b981", path: ["DLM", "KAS"] },
+          { name: "土耳其海岸线 (卡什-安塔利亚)", color: "#10b981", path: ["KAS", "AYT"] },
+          { name: "安塔利亚 - 格雷梅", color: "#10b981", path: ["AYT", "GME"], waypoints: [[37.5, 32.5]] },
+
+          // 新增公路 - 中东
+          { name: "巴格达 - 摩苏尔 - 埃尔比勒", color: "#10b981", path: ["BGW", "MSL"] },
+          { name: "摩苏尔 - 埃尔比勒", color: "#10b981", path: ["MSL", "EBL"] },
+          { name: "埃尔比勒 - 德黑兰", color: "#10b981", path: ["EBL", "IKA"], waypoints: [[35.5, 47.5]] },
+          { name: "伊朗环线 (德黑兰-伊斯法罕-设拉子)", color: "#10b981", path: ["IKA", "ISF"] },
+          { name: "伊斯法罕 - 设拉子", color: "#10b981", path: ["ISF", "SYZ"] },
+          { name: "设拉子 - 德黑兰", color: "#10b981", path: ["SYZ", "IKA"], waypoints: [[32.5, 52.0], [33.5, 51.5]] },
+
+          // 新增公路 - 埃及
+          { name: "开罗 - 锡瓦 往返", color: "#10b981", path: ["CAI", "SIW"], waypoints: [[30.0, 28.5]] },
+          { name: "尼罗河线 (开罗-卢克索)", color: "#10b981", path: ["CAI", "LXR"], waypoints: [[28.5, 31.0]] },
+          { name: "卢克索 - 赫尔格达", color: "#10b981", path: ["LXR", "HRG"] },
+          { name: "赫尔格达 - 开罗", color: "#10b981", path: ["HRG", "CAI"], waypoints: [[28.5, 32.5]] },
+
+          // 新增公路 - 欧洲与南美
+          { name: "西班牙纵线 (桑坦德-马德里)", color: "#10b981", path: ["SDR", "MAD"], waypoints: [[42.0, -3.7]] },
+          { name: "南美跨国线 (阿雷基帕-阿里卡)", color: "#10b981", path: ["AQP", "ARI"] },
+          { name: "智利北段 (阿里卡-阿塔卡马)", color: "#10b981", path: ["ARI", "ATC"], waypoints: [[-20.5, -69.5]] },
+          { name: "阿塔卡马 - 卡拉马", color: "#10b981", path: ["ATC", "CJC"] },
+          { name: "巴塔哥尼亚 (纳塔莱斯港-蓬塔阿雷纳斯)", color: "#10b981", path: ["PNT", "PUQ"], waypoints: [[-52.5, -71.5]] },
+
+          // 新增美国西海岸公路
+          { name: "旧金山 - 伯克利", color: "#10b981", path: ["SFO", "BER"] },
+          { name: "伯克利 - 洛杉矶 (沿海公路)", color: "#10b981", path: ["BER", "LAX"], waypoints: [[36.8, -122.0], [36.2, -121.8], [35.6, -121.0], [35.3, -120.7], [34.8, -120.0], [34.4, -119.7]] },
+
+          // 新增中老边境公路
+          { name: "万荣 - 万象 (中老边境公路)", color: "#10b981", path: ["VRE", "VTE"] },
+
+          // 新增华北地区公路
+          { name: "任丘 - 秦皇岛 (华北沿海公路)", color: "#10b981", path: ["RQU", "QHD"], waypoints: [[39.1, 116.8], [39.5, 117.8], [39.8, 118.8]] },
+          { name: "任丘 - 丰宁 (燕山山区公路)", color: "#10b981", path: ["RQU", "FEN"], waypoints: [[39.5, 116.2], [40.2, 116.4], [40.8, 116.5]] },
+
+          // 新增四川旅游公路
+          { name: "成都 - 都江堰 (岷江公路)", color: "#10b981", path: ["CTU", "DUJ"] },
+          { name: "都江堰 - 九寨沟 (川西北公路)", color: "#10b981", path: ["DUJ", "JZG"], waypoints: [[31.8, 103.8], [32.5, 104.0], [33.0, 104.2]] },
+          { name: "九寨沟 - 成都 (川西环线)", color: "#10b981", path: ["JZG", "CTU"], waypoints: [[32.8, 104.1], [32.2, 103.9], [31.5, 103.7]] },
+
+          // 新增珠三角公路网络
+          { name: "深圳 - 东莞", color: "#10b981", path: ["SZX", "DGU"] },
+          { name: "东莞 - 珠海", color: "#10b981", path: ["DGU", "ZHU"] },
+          { name: "珠海 - 深圳", color: "#10b981", path: ["ZHU", "SZX"] },
+          { name: "深圳 - 广州往返", color: "#10b981", path: ["SZX", "CAN"] },
+
+          // 新增长三角沿海公路
+          { name: "杭州 - 舟山往返", color: "#10b981", path: ["HGH", "ZHO"], waypoints: [[30.2, 121.0], [30.0, 121.5]] },
+
+          // 新增重庆地区公路
+          { name: "重庆 - 统景往返", color: "#10b981", path: ["CKG", "TJ"] },
+
+          // 新增京津地区公路
+          { name: "北京 - 武清往返", color: "#10b981", path: ["BJS", "WQN"] },
+          { name: "武清 - 大港往返", color: "#10b981", path: ["WQN", "DAG"] },
+
+          // 新增任丘地区公路
+          { name: "任丘 - 武清", color: "#10b981", path: ["RQU", "WQN"] },
+          { name: "任丘 - 济宁", color: "#10b981", path: ["RQU", "JIN"], waypoints: [[38.0, 116.5], [37.5, 116.8], [36.8, 116.9]] },
+          { name: "梁山 - 济宁", color: "#10b981", path: ["LSH", "JIN"] },
+          { name: "云县 - 凤庆", color: "#10b981", path: ["YXN", "FC"] },
+
+          // 新增中国新疆公路
+          { name: "伊宁 - 赛里木湖", color: "#10b981", path: ["YIN", "SLM"] },
+
+          // 新增孟加拉国公路
+          { name: "达卡 - 柯克斯巴扎尔", color: "#10b981", path: ["DAC", "COX"], waypoints: [[23.2, 91.5], [22.8, 91.8], [22.2, 91.9]] },
+
+          // 新增老挝公路
+
+          // 新增伊朗公路
+          { name: "设拉子 - 波斯波利斯", color: "#10b981", path: ["SYZ", "PPS"] },
+          { name: "柯克斯巴扎尔 - 吉大港", color: "#10b981", path: ["COX", "CGP"] }
+        ];
+
+        const App = () => {
+          const [activeTab, setActiveTab] = React.useState('all');
+          const mapContainerRef = React.useRef(null);
+          const mapInstanceRef = React.useRef(null);
+          const LRef = React.useRef(null);
+
+          const getPath = (nodes, waypoints) => {
+            let fullPath = [];
+            const start = LOCATION_DATA[nodes[0]];
+            const end = LOCATION_DATA[nodes[1]];
+            if (!start || !end) return [];
+            fullPath.push([start[0], start[1]]);
+            if (waypoints) waypoints.forEach(wp => fullPath.push(wp));
+            fullPath.push([end[0], end[1]]);
+            return fullPath;
+          };
+
+          const isDomesticRoute = (from, to) => {
+            const fromInfo = LOCATION_DATA[from];
+            const toInfo = LOCATION_DATA[to];
+            if (!fromInfo || !toInfo) return false;
+
+            // 对于机场数据，第三位是国家代码
+            // 对于城市数据，我们假设都是中国的（因为示例数据中城市都在中国）
+            const fromCountry = fromInfo.length >= 3 ? fromInfo[2] : 'CN';
+            const toCountry = toInfo.length >= 3 ? toInfo[2] : 'CN';
+            return fromCountry === toCountry;
+          };
+
+          const getCurvePath = (start, end, index) => {
+            const lat1 = start[0], lon1 = start[1];
+            let lat2 = end[0], lon2 = end[1];
+
+            // 处理跨 180 度线的逻辑：拉近终点经度
+            if (Math.abs(lon2 - lon1) > 180) {
+              if (lon2 > lon1) lon2 -= 360;
+              else lon2 += 360;
+            }
+
+            const curvature = 0.12 + (index * 0.08);
+            const midLat = (lat1 + lat2) / 2 + (lon2 - lon1) * curvature;
+            const midLon = (lon1 + lon2) / 2 - (lat2 - lat1) * curvature;
+
+            const points = [];
+            const steps = 80; // 减少点数提高性能
+            for (let i = 0; i <= steps; i++) {
+              const t = i / steps;
+              const lat = (1 - t) * (1 - t) * lat1 + 2 * (1 - t) * t * midLat + t * t * lat2;
+              const lon = (1 - t) * (1 - t) * lon1 + 2 * (1 - t) * t * midLon + t * t * lon2;
+              points.push([lat, lon]);
+            }
+            return points;
+          };
+
+          React.useEffect(() => {
+            LRef.current = window.L;
+            initMap();
+
+            return () => { if (mapInstanceRef.current) mapInstanceRef.current.remove(); };
+          }, []);
+
+          React.useEffect(() => {
+            if (mapInstanceRef.current) drawLayers();
+          }, [activeTab]);
+
+          const initMap = () => {
+            if (!LRef.current || !mapContainerRef.current) return;
+            const L = LRef.current;
+            const map = L.map(mapContainerRef.current, {
+              center: [35, 105], zoom: 4, zoomControl: false, attributionControl: false,
+              zoomSnap: 0.1, zoomDelta: 0.5, wheelPxPerZoomLevel: 140
+            });
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+              noWrap: false, // 允许底图平铺
+              bounds: [[-90, -540], [90, 540]] // 扩大底图渲染边界
+            }).addTo(map);
+
+            mapInstanceRef.current = map;
+            drawLayers();
+          };
+
+          const drawLayers = () => {
+            const map = mapInstanceRef.current;
+            const L = LRef.current;
+            map.eachLayer(layer => {
+              if (layer instanceof L.Polyline || layer instanceof L.CircleMarker) map.removeLayer(layer);
+            });
+
+            const renderMulti = (drawFn) => [-360, 0, 360].forEach(o => drawFn(o));
+
+            // 绘制航线
+            if (activeTab === 'all' || activeTab === 'flight') {
+              const routeCounter = new Map();
+
+              // 绘制已运营航线（实线）
+              pastFlightData.forEach(route => {
+                const fromCode = route[0], toCode = route[1];
+                const fromInfo = LOCATION_DATA[fromCode];
+                const toInfo = LOCATION_DATA[toCode];
+
+                if (fromInfo && toInfo) {
+                  const fromPos = [fromInfo[0], fromInfo[1]];
+                  const toPos = [toInfo[0], toInfo[1]];
+                  const sortedKey = [fromCode, toCode].sort().join('-');
+                  const count = routeCounter.get(sortedKey) || 0;
+                  routeCounter.set(sortedKey, count + 1);
+
+                  const domestic = isDomesticRoute(fromCode, toCode);
+                  let color = '#3b82f6';
+                  if (domestic) color = '#60a5fa';
+                  if (!domestic) color = '#8b5cf6';
+
+                  const curvePoints = getCurvePath(fromPos, toPos, count);
+
+                  renderMulti((o) => {
+                    const offsetPoints = curvePoints.map(p => [p[0], p[1] + o]);
+                    L.polyline(offsetPoints, {
+                      color: color,
+                      weight: 1.5,
+                      opacity: 0.3
+                    }).addTo(map);
+                  });
+                }
+              });
+
+              // 绘制未来航线（虚线）
+              futureFlightData.forEach(route => {
+                const fromCode = route[0], toCode = route[1];
+                const fromInfo = LOCATION_DATA[fromCode];
+                const toInfo = LOCATION_DATA[toCode];
+
+                if (fromInfo && toInfo) {
+                  const fromPos = [fromInfo[0], fromInfo[1]];
+                  const toPos = [toInfo[0], toInfo[1]];
+                  const sortedKey = [fromCode, toCode].sort().join('-');
+                  const count = routeCounter.get(sortedKey) || 0;
+                  routeCounter.set(sortedKey, count + 1);
+
+                  const domestic = isDomesticRoute(fromCode, toCode);
+                  let color = '#3b82f6';
+                  if (domestic) color = '#60a5fa';
+                  if (!domestic) color = '#8b5cf6';
+
+                  const curvePoints = getCurvePath(fromPos, toPos, count);
+
+                  renderMulti((o) => {
+                    const offsetPoints = curvePoints.map(p => [p[0], p[1] + o]);
+                    L.polyline(offsetPoints, {
+                      color: color,
+                      weight: 1.5,
+                      opacity: 0.3,
+                      dashArray: "8, 8"  // 虚线样式
+                    }).addTo(map);
+                  });
+                }
+              });
+            }
+
+            // 绘制铁路
+            if (activeTab === 'all' || activeTab === 'land') {
+              railwayData.forEach(rail => {
+                const path = getPath(rail.path, rail.waypoints);
+                renderMulti((offset) => {
+                  const offsetPath = path.map(p => [p[0], p[1] + offset]);
+                  // 特殊处理分界线
+                  if (rail.name === "黑河-腾冲分界线") {
+                    L.polyline(offsetPath, { color: rail.color, weight: 4, opacity: 0.8 }).addTo(map).bindTooltip(`${rail.name}`);
+                  } else {
+                    L.polyline(offsetPath, { color: rail.color, weight: 2, opacity: 0.5, dashArray: "5, 5" }).addTo(map).bindTooltip(`铁路: ${rail.name}`);
+                  }
+                });
+              });
+            }
+
+            // 绘制公路
+            if (activeTab === 'all' || activeTab === 'land') {
+              roadData.forEach(road => {
+                const path = getPath(road.path, road.waypoints);
+                renderMulti((offset) => {
+                  const offsetPath = path.map(p => [p[0], p[1] + offset]);
+                  L.polyline(offsetPath, { color: road.color, weight: 2, opacity: 0.4 }).addTo(map).bindTooltip(`公路: ${road.name}`);
+                });
+              });
+            }
+
+            // 绘制节点
+            const usedNodes = new Set([
+              ...pastFlightData.flat(),
+              ...futureFlightData.flat(),
+              ...railwayData.flatMap(r => [...r.path]),
+              ...roadData.flatMap(r => [...r.path])
+            ]);
+
+            usedNodes.forEach(code => {
+              const info = LOCATION_DATA[code];
+              if (info) {
+                renderMulti((offset) => {
+                  L.circleMarker([info[0], info[1] + offset], {
+                    radius: 3, fillColor: '#fff', color: '#334155', weight: 1.5, fillOpacity: 1
+                  }).addTo(map).bindTooltip(`${info[2]} (${code})`);
+                });
+              }
+            });
+          };
+
+          return (
+            <div className="flex flex-col h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden">
+              <header className="bg-white border-b px-6 py-4 flex items-center justify-between shadow-sm shrink-0 z-20">
+                <div className="flex items-center gap-3">
+                  <div className="bg-emerald-600 p-2 rounded-lg text-white shadow-lg">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-bold tracking-tight text-slate-800">全球航迹与陆路可视化</h1>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Transit Network Visualization</p>
+                  </div>
+                </div>
+                <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  {[
+                    { id: 'all', label: '全部显示', icon: 'Globe' },
+                    { id: 'flight', label: '航班', icon: 'Plane' },
+                    { id: 'land', label: '陆路 (铁/公)', icon: 'Car' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center gap-2 px-5 py-2 rounded-lg transition-all text-sm font-semibold ${
+                        activeTab === tab.id ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {tab.icon === 'Globe' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />}
+                        {tab.icon === 'Plane' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />}
+                        {tab.icon === 'Car' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />}
+                      </svg>
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </header>
+
+              <div className="flex-1 flex overflow-hidden">
+                <aside className="w-80 bg-white border-r flex flex-col shrink-0 overflow-hidden shadow-sm z-10">
+                  <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
+                    <section className="mb-8">
+                      <h3 className="text-[11px] font-black text-slate-400 uppercase mb-4 tracking-widest flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        新增公路路线
+                      </h3>
+                      <div className="space-y-3">
+                        {roadData.map((road, i) => (
+                          <div key={i} className="group p-3 bg-emerald-50/30 border border-emerald-100 rounded-xl hover:border-emerald-300 transition-all cursor-default">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[10px] font-bold text-slate-700">{road.name}</span>
+                              <svg className="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                              </svg>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
+                              <span>{LOCATION_DATA[road.path[0]]?.[2]}</span>
+                              <svg className="w-2.5 h-2.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                              <span>{LOCATION_DATA[road.path[1]]?.[2]}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section className="mb-8 text-xs text-slate-500 leading-relaxed italic border-l-2 border-emerald-100 pl-4">
+                      <p>跨越边境与高原的旅程。从爱尔兰的翡翠之岛到中国的大漠高原，每一条路线都见证了地理的变迁。</p>
+                    </section>
+                  </div>
+                </aside>
+
+                <div className="flex-1 relative bg-slate-100">
+                  <div ref={mapContainerRef} className="w-full h-full z-10" />
+
+                  <div className="absolute bottom-6 left-6 z-20">
+                    <div className="bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-slate-200 flex gap-6">
+                       <div className="space-y-1.5">
+                         <div className="flex items-center gap-2">
+                           <div className="w-4 h-0.5 bg-blue-400 rounded-full" />
+                           <span className="text-[9px] font-bold text-slate-600">国内航线</span>
+                         </div>
+                         <div className="flex items-center gap-2">
+                           <div className="w-4 h-0.5 bg-purple-600 rounded-full" />
+                           <span className="text-[9px] font-bold text-slate-600">国际航线</span>
+                         </div>
+                       </div>
+                       <div className="w-px bg-slate-200" />
+                       <div className="text-[9px] text-slate-400 max-w-[140px] leading-tight flex flex-col gap-1">
+                         <p className="font-bold text-slate-500 italic">Transit Network</p>
+                         <p>融合航空、铁路与公路的全球交通网络可视化。</p>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
