@@ -129,8 +129,6 @@
           "HRB": [45.7569, 126.6424, "哈尔滨"],
           "YCH": [47.7275, 128.8993, "伊春"],
           "JYI": [48.8914, 130.3977, "嘉荫"],
-          "HEI": [50.2452, 127.5285, "黑河"],
-          "TGC": [25.0209, 98.4949, "腾冲"],
           "LXA": [29.6469, 91.1172, "拉萨"],
           "LJG": [26.8721, 100.2273, "丽江"],
           "DLI": [25.5916, 100.2290, "大理"],
@@ -274,10 +272,7 @@
 
           // 新增黑龙江铁路
           { name: "伊春 - 嘉荫", color: "#ef4444", path: ["YCH", "JYI"] },
-          { name: "嘉荫 - 哈尔滨", color: "#ef4444", path: ["JYI", "HRB"], waypoints: [[47.2, 128.5], [46.5, 127.5]] },
-
-          // 中国南北分界线（特殊标记线）
-          { name: "黑河-腾冲分界线", color: "#000000", path: ["HEI", "TGC"] }
+          { name: "嘉荫 - 哈尔滨", color: "#ef4444", path: ["JYI", "HRB"], waypoints: [[47.2, 128.5], [46.5, 127.5]] }
         ];
 
         // 公路数据
@@ -532,12 +527,7 @@
                 const path = getPath(rail.path, rail.waypoints);
                 renderMulti((offset) => {
                   const offsetPath = path.map(p => [p[0], p[1] + offset]);
-                  // 特殊处理分界线
-                  if (rail.name === "黑河-腾冲分界线") {
-                    L.polyline(offsetPath, { color: rail.color, weight: 4, opacity: 0.8 }).addTo(map).bindTooltip(`${rail.name}`);
-                  } else {
-                    L.polyline(offsetPath, { color: rail.color, weight: 2, opacity: 0.5, dashArray: "5, 5" }).addTo(map).bindTooltip(`铁路: ${rail.name}`);
-                  }
+                  L.polyline(offsetPath, { color: rail.color, weight: 2, opacity: 0.5, dashArray: "5, 5" }).addTo(map).bindTooltip(`铁路: ${rail.name}`);
                 });
               });
             }
