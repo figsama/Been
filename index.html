@@ -660,7 +660,7 @@
                       <div className="grid grid-cols-2 gap-4 mb-6">
                         <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                           <div className="text-2xl font-bold text-blue-600 mb-1">{stats.cities}</div>
-                          <div className="text-[10px] font-medium text-blue-700 uppercase tracking-wider">城市</div>
+                          <div className="text-[10px] font-medium text-blue-700 uppercase tracking-wider">地方</div>
                         </div>
                         <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
                           <div className="text-2xl font-bold text-emerald-600 mb-1">{stats.countries}</div>
@@ -669,12 +669,12 @@
                       </div>
 
                       <div className="space-y-2">
-                        <h4 className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-3">各国家城市统计</h4>
+                        <h4 className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-3">各国家地方统计</h4>
                         {stats.countryStats.map((countryStat, i) => (
                           <div key={i} className="flex items-center justify-between p-3 bg-slate-50/30 border border-slate-100 rounded-lg">
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-bold text-slate-700 bg-slate-200 px-2 py-1 rounded uppercase">{countryStat.country}</span>
-                              <span className="text-[10px] text-slate-500">{countryStat.count} 个城市</span>
+                              <span className="text-[10px] text-slate-500">{countryStat.count} 个地方</span>
                             </div>
                             <div className="text-[9px] text-slate-400 max-w-[120px] truncate">
                               {countryStat.cities.slice(0, 3).join(', ')}{countryStat.cities.length > 3 ? '...' : ''}
