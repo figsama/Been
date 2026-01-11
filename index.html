@@ -462,10 +462,18 @@
               cities: Array.from(cities).map(code => LOCATION_DATA[code][2])
             })).sort((a, b) => b.count - a.count);
 
+            // 统计不同交通方式的次数
+            const flightCount = pastFlightData.length + futureFlightData.length;
+            const railwayCount = railwayData.length;
+            const roadCount = roadData.length;
+
             return {
               cities: visitedCities.size,
               countries: visitedCountries.size,
-              countryStats
+              countryStats,
+              flightCount,
+              railwayCount,
+              roadCount
             };
           };
 
@@ -665,6 +673,24 @@
                         <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
                           <div className="text-2xl font-bold text-emerald-600 mb-1">{stats.countries}</div>
                           <div className="text-[10px] font-medium text-emerald-700 uppercase tracking-wider">国家</div>
+                        </div>
+                      </div>
+
+                      <div className="mb-6">
+                        <h4 className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-3">交通方式统计</h4>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="bg-sky-50/50 p-3 rounded-lg border border-sky-100 text-center">
+                            <div className="text-lg font-bold text-sky-600 mb-1">{stats.flightCount}</div>
+                            <div className="text-[9px] font-medium text-sky-700 uppercase tracking-wider">航班</div>
+                          </div>
+                          <div className="bg-red-50/50 p-3 rounded-lg border border-red-100 text-center">
+                            <div className="text-lg font-bold text-red-600 mb-1">{stats.railwayCount}</div>
+                            <div className="text-[9px] font-medium text-red-700 uppercase tracking-wider">铁路</div>
+                          </div>
+                          <div className="bg-green-50/50 p-3 rounded-lg border border-green-100 text-center">
+                            <div className="text-lg font-bold text-green-600 mb-1">{stats.roadCount}</div>
+                            <div className="text-[9px] font-medium text-green-700 uppercase tracking-wider">公路</div>
+                          </div>
                         </div>
                       </div>
 
