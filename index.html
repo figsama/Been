@@ -432,6 +432,45 @@
             return () => { if (mapInstanceRef.current) mapInstanceRef.current.remove(); };
           }, []);
 
+          const calculateStats = () => {
+            const visitedCities = new Set();
+            const visitedCountries = new Set();
+            const countryCityCount = {};
+
+            // 收集所有路线中的城市
+            const allRoutes = [...pastFlightData, ...futureFlightData, ...railwayData.map(r => r.path), ...roadData.map(r => r.path)].flat();
+
+            allRoutes.forEach(code => {
+              if (LOCATION_DATA[code]) {
+                const [lat, lon, name, country] = LOCATION_DATA[code];
+                visitedCities.add(code);
+
+                if (country) {
+                  visitedCountries.add(country);
+                  if (!countryCityCount[country]) {
+                    countryCityCount[country] = new Set();
+                  }
+                  countryCityCount[country].add(code);
+                }
+              }
+            });
+
+            // 转换Set为对象统计
+            const countryStats = Object.entries(countryCityCount).map(([country, cities]) => ({
+              country,
+              count: cities.size,
+              cities: Array.from(cities).map(code => LOCATION_DATA[code][2])
+            })).sort((a, b) => b.count - a.count);
+
+            return {
+              cities: visitedCities.size,
+              countries: visitedCountries.size,
+              countryStats
+            };
+          };
+
+          const stats = calculateStats();
+
           React.useEffect(() => {
             if (mapInstanceRef.current) drawLayers();
           }, [activeTab]);
@@ -615,32 +654,34 @@
                   <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
                     <section className="mb-8">
                       <h3 className="text-[11px] font-black text-slate-400 uppercase mb-4 tracking-widest flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        新增公路路线
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                        旅行统计
                       </h3>
-                      <div className="space-y-3">
-                        {roadData.map((road, i) => (
-                          <div key={i} className="group p-3 bg-emerald-50/30 border border-emerald-100 rounded-xl hover:border-emerald-300 transition-all cursor-default">
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[10px] font-bold text-slate-700">{road.name}</span>
-                              <svg className="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                              </svg>
+                      <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                          <div className="text-2xl font-bold text-blue-600 mb-1">{stats.cities}</div>
+                          <div className="text-[10px] font-medium text-blue-700 uppercase tracking-wider">城市</div>
+                        </div>
+                        <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+                          <div className="text-2xl font-bold text-emerald-600 mb-1">{stats.countries}</div>
+                          <div className="text-[10px] font-medium text-emerald-700 uppercase tracking-wider">国家</div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h4 className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-3">各国家城市统计</h4>
+                        {stats.countryStats.map((countryStat, i) => (
+                          <div key={i} className="flex items-center justify-between p-3 bg-slate-50/30 border border-slate-100 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold text-slate-700 bg-slate-200 px-2 py-1 rounded uppercase">{countryStat.country}</span>
+                              <span className="text-[10px] text-slate-500">{countryStat.count} 个城市</span>
                             </div>
-                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
-                              <span>{LOCATION_DATA[road.path[0]]?.[2]}</span>
-                              <svg className="w-2.5 h-2.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                              <span>{LOCATION_DATA[road.path[1]]?.[2]}</span>
+                            <div className="text-[9px] text-slate-400 max-w-[120px] truncate">
+                              {countryStat.cities.slice(0, 3).join(', ')}{countryStat.cities.length > 3 ? '...' : ''}
                             </div>
                           </div>
                         ))}
                       </div>
-                    </section>
-
-                    <section className="mb-8 text-xs text-slate-500 leading-relaxed italic border-l-2 border-emerald-100 pl-4">
-                      <p>跨越边境与高原的旅程。从爱尔兰的翡翠之岛到中国的大漠高原，每一条路线都见证了地理的变迁。</p>
                     </section>
                   </div>
                 </aside>
