@@ -125,6 +125,7 @@
           "BKK": [13.6925, 100.7500, "曼谷素万那普", "TH"],
           "CAN": [23.3924, 113.2988, "广州白云", "CN"],
           "SJW": [38.2806, 114.6972, "石家庄正定", "CN"],
+          "BDG": [38.8743, 115.4646, "保定", "CN"],
           "TYN": [37.7469, 112.6285, "太原武宿", "CN"],
 
           // 铁路与城市
@@ -213,7 +214,8 @@
           ["PKX", "SZX"], ["SZX", "JHG"], ["VTE", "KMG"], ["KMG", "SZX"], ["SZX", "LHW"],
           ["LHW", "URC"], ["URC", "YIN"], ["YIN", "LHW"], ["LHW", "IQN"], ["IQN", "SZX"],
           ["SZX", "WUH"], ["WUH", "SHE"], ["DLC", "TNA"], ["TNA", "SZX"],
-          ["CAN", "SJW"], ["TYN", "SZX"], ["SZX", "AQG"], ["AQG", "TSN"], ["TSN", "AQG"], ["AQG", "SZX"]
+          ["CAN", "SJW"], ["TYN", "SZX"], ["SZX", "AQG"], ["AQG", "TSN"], ["TSN", "AQG"], ["AQG", "SZX"],
+          ["SZX", "PEK"], ["TYN", "SZX"]
         ];
 
         const futureFlightData = [
@@ -274,7 +276,12 @@
 
           // 新增黑龙江铁路
           { name: "伊春 - 嘉荫", color: "#ef4444", path: ["YCH", "JYI"] },
-          { name: "嘉荫 - 哈尔滨", color: "#ef4444", path: ["JYI", "HRB"], waypoints: [[47.2, 128.5], [46.5, 127.5]] }
+          { name: "嘉荫 - 哈尔滨", color: "#ef4444", path: ["JYI", "HRB"], waypoints: [[47.2, 128.5], [46.5, 127.5]] },
+
+          // 新增京津冀铁路
+          { name: "北京 - 保定", color: "#ef4444", path: ["BJS", "BDG"] },
+          { name: "保定 - 石家庄", color: "#ef4444", path: ["BDG", "SJW"] },
+          { name: "石家庄 - 太原", color: "#ef4444", path: ["SJW", "TYN"] }
         ];
 
         // 公路数据
