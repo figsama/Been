@@ -194,7 +194,8 @@
 
           // 新增公路点 - 欧洲与南美
           "ARI": [-18.4783, -70.3126, "阿里卡", "CL"],
-          "ATC": [-22.9087, -68.1997, "阿塔卡马", "CL"]
+          "ATC": [-22.9087, -68.1997, "阿塔卡马", "CL"],
+          "TCQ": [-18.0147, -70.2536, "Tacna", "PE"]
         };
 
         // 航空数据
@@ -318,9 +319,10 @@
 
           // 新增公路 - 欧洲与南美
           { name: "西班牙纵线 (桑坦德-马德里)", color: "#10b981", path: ["SDR", "MAD"], waypoints: [[42.0, -3.7]] },
-          { name: "阿雷基帕 - Tacna", color: "#10b981", path: ["AQP", "TAC"] },
-          { name: "Tacna - Arica", color: "#10b981", path: ["TAC", "ARI"] },
+          { name: "南美跨国线 (阿雷基帕-阿里卡)", color: "#10b981", path: ["AQP", "ARI"] },
           { name: "智利北段 (阿里卡-阿塔卡马)", color: "#10b981", path: ["ARI", "ATC"], waypoints: [[-20.5, -69.5]] },
+          { name: "阿雷基帕 - Tacna", color: "#10b981", path: ["AQP", "TCQ"] },
+          { name: "Tacna - Arica", color: "#10b981", path: ["TCQ", "ARI"] },
           { name: "阿塔卡马 - 卡拉马", color: "#10b981", path: ["ATC", "CJC"] },
           { name: "巴塔哥尼亚 (纳塔莱斯港-蓬塔阿雷纳斯)", color: "#10b981", path: ["PNT", "PUQ"], waypoints: [[-52.5, -71.5]] },
 
