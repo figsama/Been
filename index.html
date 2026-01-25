@@ -122,6 +122,7 @@
           "MDL": [21.7039, 95.9672, "曼德勒", "MM"],
           "BGN": [21.1717, 94.8586, "蒲甘", "MM"],
           "NYU": [20.6530, 96.9341, "娘瑞", "MM"],
+          "HEH": [20.7472, 96.7921, "Heho", "MM"],
           "BKK": [13.6925, 100.7500, "曼谷素万那普", "TH"],
           "CAN": [23.3924, 113.2988, "广州白云", "CN"],
           "SJW": [38.2806, 114.6972, "石家庄正定", "CN"],
@@ -215,7 +216,7 @@
           ["LHW", "URC"], ["URC", "YIN"], ["YIN", "LHW"], ["LHW", "IQN"], ["IQN", "SZX"],
           ["SZX", "WUH"], ["WUH", "SHE"], ["DLC", "TNA"], ["TNA", "SZX"],
           ["CAN", "SJW"], ["TYN", "SZX"], ["SZX", "AQG"], ["AQG", "TSN"], ["TSN", "AQG"], ["AQG", "SZX"],
-          ["SZX", "PEK"], ["TYN", "SZX"]
+          ["SZX", "PEK"], ["TYN", "SZX"], ["NYU", "HEH"]
         ];
 
         const futureFlightData = [
@@ -534,9 +535,9 @@
                   routeCounter.set(sortedKey, count + 1);
 
                   const domestic = isDomesticRoute(fromCode, toCode);
-                  let color = '#3b82f6';
-                  if (domestic) color = '#60a5fa';
-                  if (!domestic) color = '#8b5cf6';
+                  let color = '#2563eb';
+                  if (domestic) color = '#3b82f6';
+                  if (!domestic) color = '#7c3aed';
 
                   const curvePoints = getCurvePath(fromPos, toPos, count);
 
@@ -565,9 +566,9 @@
                   routeCounter.set(sortedKey, count + 1);
 
                   const domestic = isDomesticRoute(fromCode, toCode);
-                  let color = '#3b82f6';
-                  if (domestic) color = '#60a5fa';
-                  if (!domestic) color = '#8b5cf6';
+                  let color = '#2563eb';
+                  if (domestic) color = '#3b82f6';
+                  if (!domestic) color = '#7c3aed';
 
                   const curvePoints = getCurvePath(fromPos, toPos, count);
 
@@ -576,8 +577,7 @@
                     L.polyline(offsetPoints, {
                       color: color,
                       weight: 1.5,
-                      opacity: 0.3,
-                      dashArray: "8, 8"  // 虚线样式
+                      opacity: 0.3
                     }).addTo(map);
                   });
                 }
