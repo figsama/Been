@@ -129,8 +129,11 @@
           "SJW": [38.2806, 114.6972, "石家庄正定", "CN"],
           "BDG": [38.8743, 115.4646, "保定", "CN"],
           "TYN": [37.7469, 112.6285, "太原武宿", "CN"],
+          "KWE": [26.5385, 106.8009, "贵阳龙洞堡", "CN"],
 
           // 铁路与城市
+          "GYG": [26.5783, 106.7135, "贵阳", "CN"],
+          "TRG": [27.8311, 109.1899, "铜仁", "CN"]
           "LON": [51.5074, -0.1278, "伦敦", "GB"],
           "BJS": [39.9042, 116.4074, "北京", "CN"],
           "HRB": [45.7569, 126.6424, "哈尔滨", "CN"],
@@ -218,7 +221,8 @@
           ["LHW", "URC"], ["URC", "YIN"], ["YIN", "LHW"], ["LHW", "IQN"], ["IQN", "SZX"],
           ["SZX", "WUH"], ["WUH", "SHE"], ["DLC", "TNA"], ["TNA", "SZX"],
           ["CAN", "SJW"], ["TYN", "SZX"], ["SZX", "AQG"], ["AQG", "TSN"], ["TSN", "AQG"], ["AQG", "SZX"],
-          ["SZX", "PEK"], ["TYN", "SZX"], ["NYU", "HEH"]
+          ["SZX", "PEK"], ["TYN", "SZX"], ["NYU", "HEH"],
+          ["PEK", "SZX"], ["SZX", "PKX"], ["SZX", "KWE"]
         ];
 
         const futureFlightData = [
@@ -284,7 +288,11 @@
           // 新增京津冀铁路
           { name: "北京 - 保定", color: "#ef4444", path: ["BJS", "BDG"] },
           { name: "保定 - 石家庄", color: "#ef4444", path: ["BDG", "SJW"] },
-          { name: "石家庄 - 太原", color: "#ef4444", path: ["SJW", "TYN"] }
+          { name: "石家庄 - 太原", color: "#ef4444", path: ["SJW", "TYN"] },
+
+          // 新增贵州-深圳铁路
+          { name: "贵阳 - 铜仁", color: "#ef4444", path: ["GYG", "TRG"], waypoints: [[27.2, 108.0]] },
+          { name: "铜仁 - 深圳", color: "#ef4444", path: ["TRG", "SZX"], waypoints: [[26.5, 110.5], [24.8, 112.5], [23.5, 113.3]] }
         ];
 
         // 公路数据
