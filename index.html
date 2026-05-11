@@ -129,11 +129,23 @@
           "SJW": [38.2806, 114.6972, "石家庄正定", "CN"],
           "BDG": [38.8743, 115.4646, "保定", "CN"],
           "TYN": [37.7469, 112.6285, "太原武宿", "CN"],
-          "KWE": [26.5385, 106.8009, "贵阳龙洞堡", "CN"],
+          "XIY": [34.4471, 108.7519, "西安咸阳", "CN"],
+          "HKG": [22.3080, 113.9185, "香港", "HK"],
+          "UBN": [47.8436, 106.7649, "乌兰巴托成吉思汗", "MN"],
+          "IKT": [52.2680, 104.3880, "伊尔库茨克", "RU"],
+          "MFM": [22.1496, 113.5916, "澳门", "MO"],
+          "PUS": [35.1795, 128.9382, "釜山金海", "KR"],
+          "ICN": [37.4602, 126.4407, "首尔仁川", "KR"],
+          "BZB": [39.1267, 116.3914, "霸州北", "CN"],
+          "SZB": [22.6117, 114.0292, "深圳北", "CN"],
+          "QZZ": [24.9583, 118.5828, "泉州", "CN"],
+          "XAB": [34.3789, 108.9377, "西安北", "CN"],
+          "HZZ": [33.0777, 107.0233, "汉中", "CN"],
+          "MXN": [33.1536, 106.6736, "勉县", "CN"],
+          "ULN": [47.9185, 106.9176, "乌兰巴托", "MN"],
+          "UUD": [51.8335, 107.5840, "乌兰乌德", "RU"],
 
           // 铁路与城市
-          "GYG": [26.5783, 106.7135, "贵阳", "CN"],
-          "TRG": [27.8311, 109.1899, "铜仁", "CN"]
           "LON": [51.5074, -0.1278, "伦敦", "GB"],
           "BJS": [39.9042, 116.4074, "北京", "CN"],
           "HRB": [45.7569, 126.6424, "哈尔滨", "CN"],
@@ -222,12 +234,12 @@
           ["SZX", "WUH"], ["WUH", "SHE"], ["DLC", "TNA"], ["TNA", "SZX"],
           ["CAN", "SJW"], ["TYN", "SZX"], ["SZX", "AQG"], ["AQG", "TSN"], ["TSN", "AQG"], ["AQG", "SZX"],
           ["SZX", "PEK"], ["TYN", "SZX"], ["NYU", "HEH"],
-          ["PEK", "SZX"], ["SZX", "PKX"], ["SZX", "KWE"]
+          ["SZX", "PEK"], ["PKX", "SZX"], ["SZX", "XIY"], ["XIY", "SZX"], ["HKG", "UBN"],
+          ["IKT", "CAN"], ["SZX", "PEK"], ["PEK", "SZX"], ["MFM", "PUS"], ["ICN", "HKG"],
+          ["SZX", "DMK"], ["DMK", "RGN"], ["MDL", "DMK"], ["BKK", "SZX"]
         ];
 
-        const futureFlightData = [
-          ["SZX", "DMK"], ["DMK", "RGN"], ["MDL", "DMK"], ["BKK", "SZX"], ["SZX", "PKX"], ["PEK", "SZX"]
-        ];
+        const futureFlightData = [];
 
         // 铁路数据
         const railwayData = [
@@ -290,9 +302,15 @@
           { name: "保定 - 石家庄", color: "#ef4444", path: ["BDG", "SJW"] },
           { name: "石家庄 - 太原", color: "#ef4444", path: ["SJW", "TYN"] },
 
-          // 新增贵州-深圳铁路
-          { name: "贵阳 - 铜仁", color: "#ef4444", path: ["GYG", "TRG"], waypoints: [[27.2, 108.0]] },
-          { name: "铜仁 - 深圳", color: "#ef4444", path: ["TRG", "SZX"], waypoints: [[26.5, 110.5], [24.8, 112.5], [23.5, 113.3]] }
+          { name: "北京 - 霸州北", color: "#ef4444", path: ["BJS", "BZB"], waypoints: [[39.35, 116.45]] },
+          { name: "深圳北 - 福州", color: "#ef4444", path: ["SZB", "FZU"], waypoints: [[24.8, 116.5], [26.2, 118.2]] },
+          { name: "福州 - 泉州", color: "#ef4444", path: ["FZU", "QZZ"], waypoints: [[25.72, 119.15]] },
+          { name: "泉州 - 深圳北", color: "#ef4444", path: ["QZZ", "SZB"], waypoints: [[24.4, 117.8], [23.2, 114.8]] },
+          { name: "西安北 - 汉中", color: "#ef4444", path: ["XAB", "HZZ"], waypoints: [[33.85, 107.55]] },
+          { name: "勉县 - 汉中", color: "#ef4444", path: ["MXN", "HZZ"] },
+          { name: "汉中 - 西安北", color: "#ef4444", path: ["HZZ", "XAB"], waypoints: [[33.85, 107.55]] },
+
+          { name: "跨蒙/西伯利亚铁路 (乌兰巴托 - 乌兰乌德 - 伊尔库茨克)", color: "#ef4444", path: ["ULN", "IKT"], waypoints: [[49.4868, 105.9228], [50.2333, 106.2000], [50.3833, 106.1167], [51.3500, 107.0000], [51.8335, 107.5840], [51.7136, 105.8694], [51.6628, 103.7081]] }
         ];
 
         // 公路数据
@@ -414,10 +432,9 @@
             const toInfo = LOCATION_DATA[to];
             if (!fromInfo || !toInfo) return false;
 
-            // 对于机场数据，第三位是国家代码
-            // 对于城市数据，我们假设都是中国的（因为示例数据中城市都在中国）
-            const fromCountry = fromInfo.length >= 3 ? fromInfo[2] : 'CN';
-            const toCountry = toInfo.length >= 3 ? toInfo[2] : 'CN';
+            // LOCATION_DATA: [lat, lon, 名称, 国家码]
+            const fromCountry = fromInfo.length >= 4 ? fromInfo[3] : 'CN';
+            const toCountry = toInfo.length >= 4 ? toInfo[3] : 'CN';
             return fromCountry === toCountry;
           };
 
