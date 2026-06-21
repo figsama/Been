@@ -4,14 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>全球航迹可视化平台</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/tailwindcss@2.2.19/dist/tailwind.min.css">
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
+          onerror="this.onerror=null;this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+          onerror="this.onerror=null;this.href='https://unpkg.com/tailwindcss@2.2.19/dist/tailwind.min.css'">
+    <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js" crossorigin
+            onerror="this.onerror=null;this.src='https://unpkg.com/react@18.3.1/umd/react.production.min.js'"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin
+            onerror="this.onerror=null;this.src='https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js'"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.9/babel.min.js"
+            onerror="this.onerror=null;this.src='https://unpkg.com/@babel/standalone@7.26.9/babel.min.js'"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
+            onerror="this.onerror=null;this.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'"></script>
     <style>
+        html, body, #root { height: 100%; margin: 0; }
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         .leaflet-container { background: #f1f5f9 !important; }
@@ -27,7 +34,25 @@
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div id="boot-loading" style="display:flex;align-items:center;justify-content:center;height:100%;font-family:system-ui,sans-serif;color:#64748b;">
+            正在加载地图…
+        </div>
+    </div>
+
+    <script>
+        setTimeout(function () {
+            var root = document.getElementById('root');
+            var loading = document.getElementById('boot-loading');
+            if (loading && root && root.contains(loading) && !window.React) {
+                root.innerHTML = '<div style="padding:24px;font-family:system-ui,sans-serif;max-width:520px;margin:40px auto;color:#334155;line-height:1.6">'
+                    + '<h2 style="margin:0 0 12px">页面资源加载失败</h2>'
+                    + '<p>通常是网络无法访问 JS CDN（jsdelivr / unpkg）。请尝试：</p>'
+                    + '<ul><li>刷新页面（Cmd/Ctrl + Shift + R）</li><li>换网络或开代理后再试</li><li>稍等片刻后重试</li></ul>'
+                    + '<p style="color:#64748b;font-size:14px">https://figsama.github.io/Been/</p></div>';
+            }
+        }, 15000);
+    </script>
 
     <script type="text/babel">
         // 统一的地理坐标数据库 [lat, lon, name]
@@ -541,9 +566,11 @@
               zoomSnap: 0.1, zoomDelta: 0.5, wheelPxPerZoomLevel: 250
             });
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-              noWrap: false, // 允许底图平铺
-              bounds: [[-90, -540], [90, 540]] // 扩大底图渲染边界
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              subdomains: 'abc',
+              maxZoom: 19,
+              noWrap: false,
+              bounds: [[-90, -540], [90, 540]]
             }).addTo(map);
 
             mapInstanceRef.current = map;
