@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全球航迹可视化平台</title>
+    <title>Been — Global Travel Map</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
           onerror="this.onerror=null;this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'">
@@ -20,7 +20,7 @@
     <style>
         html, body, #root { height: 100%; margin: 0; }
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
         .leaflet-container { background: #f1f5f9 !important; }
         .leaflet-tooltip {
             border: none !important;
@@ -31,12 +31,13 @@
             font-weight: bold !important;
             color: #1e293b !important;
         }
+        .sidebar-stat-bar { transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
 <body>
     <div id="root">
         <div id="boot-loading" style="display:flex;align-items:center;justify-content:center;height:100%;font-family:system-ui,sans-serif;color:#64748b;">
-            正在加载地图…
+            Loading map…
         </div>
     </div>
 
@@ -447,6 +448,48 @@
           { name: "深圳 - 香港 (跨境大巴)", color: "#10b981", path: ["SZX", "HKG"], waypoints: [[22.52, 113.93], [22.42, 113.98], [22.35, 113.95]] }
         ];
 
+        const COUNTRY_NAMES = {
+          CN: "China", US: "United States", JP: "Japan", EG: "Egypt", TR: "Turkey",
+          IQ: "Iraq", IR: "Iran", GB: "United Kingdom", IE: "Ireland", BA: "Bosnia",
+          BD: "Bangladesh", ES: "Spain", IT: "Italy", PL: "Poland", NO: "Norway",
+          SE: "Sweden", BE: "Belgium", CU: "Cuba", PE: "Peru", CL: "Chile",
+          CO: "Colombia", MX: "Mexico", LA: "Laos", MM: "Myanmar", TH: "Thailand",
+          HK: "Hong Kong", MN: "Mongolia", KR: "South Korea", MO: "Macau",
+          KH: "Cambodia", RU: "Russia"
+        };
+
+        // Basemap: Tianditu (official 中国标准地图, EPSG:3857) when TK is set.
+        // Apply for a free browser key at https://console.tianditu.gov.cn/
+        // Whitelist: figsama.github.io and localhost
+        const TIANDITU_TK = '';
+
+        const addBasemapLayers = (map, L) => {
+          const wrapOpts = { noWrap: false, bounds: [[-90, -540], [90, 540]] };
+
+          if (TIANDITU_TK) {
+            const tdOpts = {
+              ...wrapOpts,
+              subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
+              maxZoom: 18,
+              attribution: '© Tianditu / NGCC'
+            };
+            const tk = TIANDITU_TK;
+            const wmts = (layer) =>
+              `https://t{s}.tianditu.gov.cn/${layer}_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${layer === 'vec' ? 'vec' : 'eva'}&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=${tk}`;
+            L.tileLayer(wmts('vec'), tdOpts).addTo(map);
+            L.tileLayer(wmts('eva'), { ...tdOpts, attribution: '© Tianditu' }).addTo(map);
+            return;
+          }
+
+          // Fallback: Gaode — PRC-compliant boundaries (no API key; GCJ-02 tiles)
+          L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=en&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+            ...wrapOpts,
+            subdomains: ['1', '2', '3', '4'],
+            maxZoom: 18,
+            attribution: '© AutoNavi'
+          }).addTo(map);
+        };
+
         const App = () => {
           const [activeTab, setActiveTab] = React.useState('all');
           const mapContainerRef = React.useRef(null);
@@ -530,11 +573,11 @@
               }
             });
 
-            // 转换Set为对象统计
+            // Convert Set to sorted stats; sidebar uses IATA/city codes (English UI)
             const countryStats = Object.entries(countryCityCount).map(([country, cities]) => ({
               country,
               count: cities.size,
-              cities: Array.from(cities).map(code => LOCATION_DATA[code][2])
+              codes: Array.from(cities).sort()
             })).sort((a, b) => b.count - a.count);
 
             // 统计不同交通方式的次数
@@ -553,6 +596,12 @@
           };
 
           const stats = calculateStats();
+          const totalSegments = stats.flightCount + stats.railwayCount + stats.roadCount;
+          const transportRows = [
+            { key: 'flights', label: 'Flights', count: stats.flightCount, color: 'bg-sky-400', pct: totalSegments ? (stats.flightCount / totalSegments) * 100 : 0 },
+            { key: 'rail', label: 'Rail', count: stats.railwayCount, color: 'bg-rose-400', pct: totalSegments ? (stats.railwayCount / totalSegments) * 100 : 0 },
+            { key: 'road', label: 'Road', count: stats.roadCount, color: 'bg-emerald-400', pct: totalSegments ? (stats.roadCount / totalSegments) * 100 : 0 }
+          ];
 
           React.useEffect(() => {
             if (mapInstanceRef.current) drawLayers();
@@ -562,16 +611,11 @@
             if (!LRef.current || !mapContainerRef.current) return;
             const L = LRef.current;
             const map = L.map(mapContainerRef.current, {
-              center: [35, 105], zoom: 4, zoomControl: false, attributionControl: false,
+              center: [35, 105], zoom: 4, zoomControl: false, attributionControl: true,
               zoomSnap: 0.1, zoomDelta: 0.5, wheelPxPerZoomLevel: 250
             });
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              subdomains: 'abc',
-              maxZoom: 19,
-              noWrap: false,
-              bounds: [[-90, -540], [90, 540]]
-            }).addTo(map);
+            addBasemapLayers(map, L);
 
             mapInstanceRef.current = map;
             drawLayers();
@@ -696,33 +740,33 @@
           };
 
           return (
-            <div className="flex flex-col h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden">
-              <header className="bg-white border-b px-6 py-4 flex items-center justify-between shadow-sm shrink-0 z-20">
+            <div className="flex flex-col h-screen bg-slate-100 font-sans text-slate-900 overflow-hidden">
+              <header className="bg-white/90 backdrop-blur border-b border-slate-200/80 px-5 py-3 flex items-center justify-between shrink-0 z-20">
                 <div className="flex items-center gap-3">
-                  <div className="bg-emerald-600 p-2 rounded-lg text-white shadow-lg">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
                     </svg>
                   </div>
                   <div>
-                    <h1 className="text-lg font-bold tracking-tight text-slate-800">全球航迹与陆路可视化</h1>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Transit Network Visualization</p>
+                    <h1 className="text-base font-semibold tracking-tight text-slate-800">Been</h1>
+                    <p className="text-[11px] text-slate-400 tracking-wide">Global transit map</p>
                   </div>
                 </div>
-                <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <div className="flex bg-slate-100/80 p-1 rounded-xl">
                   {[
-                    { id: 'all', label: '全部显示', icon: 'Globe' },
-                    { id: 'flight', label: '航班', icon: 'Plane' },
-                    { id: 'land', label: '陆路 (铁/公)', icon: 'Car' }
+                    { id: 'all', label: 'All', icon: 'Globe' },
+                    { id: 'flight', label: 'Flights', icon: 'Plane' },
+                    { id: 'land', label: 'Land', icon: 'Car' }
                   ].map(tab => (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-2 px-5 py-2 rounded-lg transition-all text-sm font-semibold ${
-                        activeTab === tab.id ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-500 hover:text-slate-800'
+                      className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg transition-all text-xs font-medium ${
+                        activeTab === tab.id ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500 hover:text-slate-700'
                       }`}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         {tab.icon === 'Globe' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />}
                         {tab.icon === 'Plane' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />}
                         {tab.icon === 'Car' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />}
@@ -734,57 +778,69 @@
               </header>
 
               <div className="flex-1 flex overflow-hidden">
-                <aside className="w-80 bg-white border-r flex flex-col shrink-0 overflow-hidden shadow-sm z-10">
-                  <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
-                    <section className="mb-8">
-                      <h3 className="text-[11px] font-black text-slate-400 uppercase mb-4 tracking-widest flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                        旅行统计
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                          <div className="text-2xl font-bold text-blue-600 mb-1">{stats.cities}</div>
-                          <div className="text-[10px] font-medium text-blue-700 uppercase tracking-wider">地方</div>
-                        </div>
-                        <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
-                          <div className="text-2xl font-bold text-emerald-600 mb-1">{stats.countries}</div>
-                          <div className="text-[10px] font-medium text-emerald-700 uppercase tracking-wider">国家</div>
-                        </div>
-                      </div>
+                <aside className="w-[300px] bg-slate-900 text-slate-100 flex flex-col shrink-0 z-10 border-r border-slate-800">
+                  <div className="px-5 pt-5 pb-4 border-b border-slate-800">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-400/90">Overview</p>
+                    <h2 className="text-xl font-light text-white mt-1 tracking-tight">Travel stats</h2>
+                  </div>
 
-                      <div className="mb-6">
-                        <h4 className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-3">交通方式统计</h4>
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="bg-sky-50/50 p-3 rounded-lg border border-sky-100 text-center">
-                            <div className="text-lg font-bold text-sky-600 mb-1">{stats.flightCount}</div>
-                            <div className="text-[9px] font-medium text-sky-700 uppercase tracking-wider">航班</div>
-                          </div>
-                          <div className="bg-red-50/50 p-3 rounded-lg border border-red-100 text-center">
-                            <div className="text-lg font-bold text-red-600 mb-1">{stats.railwayCount}</div>
-                            <div className="text-[9px] font-medium text-red-700 uppercase tracking-wider">铁路</div>
-                          </div>
-                          <div className="bg-green-50/50 p-3 rounded-lg border border-green-100 text-center">
-                            <div className="text-lg font-bold text-green-600 mb-1">{stats.roadCount}</div>
-                            <div className="text-[9px] font-medium text-green-700 uppercase tracking-wider">公路</div>
-                          </div>
-                        </div>
+                  <div className="p-5 flex-1 overflow-y-auto custom-scrollbar space-y-6">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-2xl bg-slate-800/80 border border-slate-700/60 p-4">
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Places</p>
+                        <p className="text-3xl font-light text-white mt-1 tabular-nums">{stats.cities}</p>
                       </div>
+                      <div className="rounded-2xl bg-slate-800/80 border border-slate-700/60 p-4">
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Countries</p>
+                        <p className="text-3xl font-light text-white mt-1 tabular-nums">{stats.countries}</p>
+                      </div>
+                    </div>
 
-                      <div className="space-y-2">
-                        <h4 className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-3">各国家地方统计</h4>
-                        {stats.countryStats.map((countryStat, i) => (
-                          <div key={i} className="flex items-center justify-between p-3 bg-slate-50/30 border border-slate-100 rounded-lg">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold text-slate-700 bg-slate-200 px-2 py-1 rounded uppercase">{countryStat.country}</span>
-                              <span className="text-[10px] text-slate-500">{countryStat.count} 个地方</span>
+                    <section>
+                      <div className="flex items-baseline justify-between mb-3">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">By mode</h3>
+                        <span className="text-[10px] text-slate-500 tabular-nums">{totalSegments} segments</span>
+                      </div>
+                      <div className="space-y-3">
+                        {transportRows.map(row => (
+                          <div key={row.key}>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-xs text-slate-300">{row.label}</span>
+                              <span className="text-xs font-medium text-white tabular-nums">{row.count}</span>
                             </div>
-                            <div className="text-[9px] text-slate-400 max-w-[120px] truncate">
-                              {countryStat.cities.slice(0, 3).join(', ')}{countryStat.cities.length > 3 ? '...' : ''}
+                            <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                              <div className={`sidebar-stat-bar h-full rounded-full ${row.color}`} style={{ width: `${row.pct}%` }} />
                             </div>
                           </div>
                         ))}
                       </div>
                     </section>
+
+                    <section>
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Countries visited</h3>
+                      <div className="space-y-2">
+                        {stats.countryStats.map((countryStat, i) => (
+                          <div key={i} className="group rounded-xl bg-slate-800/50 border border-slate-700/40 px-3 py-2.5 hover:border-slate-600/60 transition-colors">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="text-sm text-white truncate">{COUNTRY_NAMES[countryStat.country] || countryStat.country}</p>
+                                <p className="text-[10px] text-slate-500 mt-0.5">{countryStat.country}</p>
+                              </div>
+                              <span className="shrink-0 text-xs font-medium text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md tabular-nums">
+                                {countryStat.count}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-500 mt-2 font-mono leading-relaxed truncate group-hover:whitespace-normal group-hover:overflow-visible">
+                              {countryStat.codes.slice(0, 8).join(' · ')}{countryStat.codes.length > 8 ? ` +${countryStat.codes.length - 8}` : ''}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  </div>
+
+                  <div className="px-5 py-4 border-t border-slate-800 text-[10px] text-slate-500 leading-relaxed">
+                    <span className="text-slate-400 font-medium">Been</span> — personal global travel atlas
                   </div>
                 </aside>
 
@@ -792,21 +848,20 @@
                   <div ref={mapContainerRef} className="w-full h-full z-10" />
 
                   <div className="absolute bottom-6 left-6 z-20">
-                    <div className="bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-slate-200 flex gap-6">
-                       <div className="space-y-1.5">
+                    <div className="bg-white/95 backdrop-blur-md px-4 py-3 rounded-xl shadow-lg border border-slate-200/80 flex gap-5 items-center">
+                       <div className="space-y-2">
                          <div className="flex items-center gap-2">
-                           <div className="w-4 h-0.5 bg-blue-400 rounded-full" />
-                           <span className="text-[9px] font-bold text-slate-600">国内航线</span>
+                           <div className="w-5 h-0.5 bg-blue-400 rounded-full" />
+                           <span className="text-[10px] font-medium text-slate-600">Domestic</span>
                          </div>
                          <div className="flex items-center gap-2">
-                           <div className="w-4 h-0.5 bg-purple-600 rounded-full" />
-                           <span className="text-[9px] font-bold text-slate-600">国际航线</span>
+                           <div className="w-5 h-0.5 bg-violet-600 rounded-full" />
+                           <span className="text-[10px] font-medium text-slate-600">International</span>
                          </div>
-                       </div>
-                       <div className="w-px bg-slate-200" />
-                       <div className="text-[9px] text-slate-400 max-w-[140px] leading-tight flex flex-col gap-1">
-                         <p className="font-bold text-slate-500 italic">Transit Network</p>
-                         <p>融合航空、铁路与公路的全球交通网络可视化。</p>
+                         <div className="flex items-center gap-2">
+                           <div className="w-5 border-t border-dashed border-red-400" />
+                           <span className="text-[10px] font-medium text-slate-600">Rail & road</span>
+                         </div>
                        </div>
                     </div>
                   </div>
