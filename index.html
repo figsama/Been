@@ -241,7 +241,17 @@
           // 新增公路点 - 欧洲与南美
           "ARI": [-18.4783, -70.3126, "阿里卡", "CL"],
           "ATC": [-22.9087, -68.1997, "阿塔卡马", "CL"],
-          "TCQ": [-18.0147, -70.2536, "Tacna", "PE"]
+          "TCQ": [-18.0147, -70.2536, "Tacna", "PE"],
+
+          // 新增铁路站点
+          "BJN": [39.8650, 116.3786, "北京南", "CN"],
+          "SHH": [31.1942, 121.3194, "上海虹桥", "CN"],
+
+          // 新增越南城市
+          "SGN": [10.8167, 106.6333, "胡志明", "VN"],
+          "DLAT": [11.9416, 108.4392, "大叻", "VN"],
+          "NHA": [12.2388, 109.1967, "芽庄", "VN"],
+          "DAD": [16.0447, 108.1716, "岘港", "VN"]
         };
 
         // 航空数据
@@ -268,7 +278,9 @@
           ["SZX", "PEK"], ["PKX", "SZX"], ["SZX", "XIY"], ["XIY", "SZX"], ["HKG", "UBN"],
           ["IKT", "CAN"], ["SZX", "PEK"], ["PEK", "SZX"], ["MFM", "PUS"], ["ICN", "HKG"],
           ["SZX", "DMK"], ["DMK", "RGN"], ["MDL", "DMK"], ["BKK", "SZX"],
-          ["CAN", "KTI"], ["KTI", "HKG"]
+          ["CAN", "KTI"], ["KTI", "HKG"],
+          ["PEK", "SZX"], ["SZX", "PEK"], ["PEK", "SZX"],
+          ["SZX", "SHA"], ["SHA", "PKX"], ["PKX", "SGN"]
         ];
 
         const futureFlightData = [];
@@ -344,7 +356,12 @@
 
           { name: "跨蒙/西伯利亚铁路 (乌兰巴托 - 乌兰乌德 - 伊尔库茨克)", color: "#ef4444", path: ["ULN", "IKT"], waypoints: [[49.4868, 105.9228], [50.2333, 106.2000], [50.3833, 106.1167], [51.3500, 107.0000], [51.8335, 107.5840], [51.7136, 105.8694], [51.6628, 103.7081]] },
 
-          { name: "韩国KTX (釜山 - 首尔)", color: "#ef4444", path: ["PUSC", "SEL"], waypoints: [[35.8714, 128.6014], [36.3504, 127.3845]] }
+          { name: "韩国KTX (釜山 - 首尔)", color: "#ef4444", path: ["PUSC", "SEL"], waypoints: [[35.8714, 128.6014], [36.3504, 127.3845]] },
+
+          // 新增铁路
+          { name: "深圳 - 任丘", color: "#ef4444", path: ["SZB", "RQU"], waypoints: [[25.0, 114.0], [28.5, 114.5], [32.0, 115.0], [36.0, 116.0], [38.0, 116.3]] },
+          { name: "北京南 - 上海虹桥", color: "#ef4444", path: ["BJN", "SHH"], waypoints: [[38.2, 116.7], [37.0, 116.5], [35.8, 116.5], [34.6, 117.0], [33.5, 118.5], [32.5, 119.5], [31.8, 120.5]] },
+          { name: "上海虹桥 - 北京南", color: "#ef4444", path: ["SHH", "BJN"], waypoints: [[31.8, 120.5], [32.5, 119.5], [33.5, 118.5], [34.6, 117.0], [35.8, 116.5], [37.0, 116.5], [38.2, 116.7]] }
         ];
 
         // 公路数据
@@ -445,7 +462,12 @@
 
           { name: "金边 - 暹粒", color: "#10b981", path: ["PNH", "REP"], waypoints: [[12.25, 104.55], [12.85, 104.15], [13.15, 103.75]] },
           { name: "暹粒 - 金边", color: "#10b981", path: ["REP", "PNH"], waypoints: [[13.15, 103.75], [12.85, 104.15], [12.25, 104.55]] },
-          { name: "深圳 - 香港 (跨境大巴)", color: "#10b981", path: ["SZX", "HKG"], waypoints: [[22.52, 113.93], [22.42, 113.98], [22.35, 113.95]] }
+          { name: "深圳 - 香港 (跨境大巴)", color: "#10b981", path: ["SZX", "HKG"], waypoints: [[22.52, 113.93], [22.42, 113.98], [22.35, 113.95]] },
+
+          // 新增越南公路
+          { name: "胡志明 - 大叻", color: "#10b981", path: ["SGN", "DLAT"], waypoints: [[11.0, 107.0], [11.5, 107.8]] },
+          { name: "大叻 - 芽庄", color: "#10b981", path: ["DLAT", "NHA"], waypoints: [[12.0, 108.7]] },
+          { name: "芽庄 - 岘港", color: "#10b981", path: ["NHA", "DAD"], waypoints: [[13.5, 109.0], [14.8, 108.8]] }
         ];
 
         const COUNTRY_NAMES = {
@@ -455,7 +477,7 @@
           SE: "Sweden", BE: "Belgium", CU: "Cuba", PE: "Peru", CL: "Chile",
           CO: "Colombia", MX: "Mexico", LA: "Laos", MM: "Myanmar", TH: "Thailand",
           HK: "Hong Kong", MN: "Mongolia", KR: "South Korea", MO: "Macau",
-          KH: "Cambodia", RU: "Russia"
+          KH: "Cambodia", RU: "Russia", VN: "Vietnam"
         };
 
         // Basemap: Tianditu (official 中国标准地图, EPSG:3857) when TK is set.
@@ -778,7 +800,7 @@
               </header>
 
               <div className="flex-1 flex overflow-hidden">
-                <aside className="w-[300px] bg-slate-900 text-slate-100 flex flex-col shrink-0 z-10 border-r border-slate-800">
+                <aside className="w-[150px] bg-slate-900 text-slate-100 flex flex-col shrink-0 z-10 border-r border-slate-800">
                   <div className="px-5 pt-5 pb-4 border-b border-slate-800">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-400/90">Overview</p>
                     <h2 className="text-xl font-light text-white mt-1 tracking-tight">Travel stats</h2>
